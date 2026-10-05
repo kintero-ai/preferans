@@ -1,5 +1,5 @@
-// Офлайн-кэш: при изменении файлов увеличьте версию
-const CACHE = 'preferans-v2';
+// Офлайн-кэш. При наличии сети файлы всегда берутся свежими, кэш — только для работы без интернета.
+const CACHE = 'preferans-v3';
 const FILES = [
   './',
   'index.html',
@@ -18,7 +18,10 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' — мимо HTTP-кэша браузера, чтобы не сохранить устаревшие файлы
+  e.waitUntil(caches.open(CACHE)
+    .then(c => c.addAll(FILES.map(u => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -31,5 +34,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request)));
+  e.respondWith(
+    fetch(e.request, { cache: 'no-cache' })
+      .then(resp => {
+        if (resp.ok && new URL(e.request.url).origin === location.origin) {
+          const copy = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return resp;
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true }))
+  );
 });
