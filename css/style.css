@@ -380,3 +380,13 @@ button { font: inherit; cursor: pointer; }
   .bgrid { gap: 3px; }
   .brow { margin-top: 4px; }
 }
+
+/* ---------- Итоги партии ---------- */
+.final { text-align: center; }
+.final-title { font-size: 28px; font-weight: 800; margin: 6px 0 2px; }
+.final-title.win { color: var(--gold); }
+.final-title.lose { color: #ff9a9a; }
+.final-score { font-size: 22px; font-weight: 700; }
+.final-sub { font-size: 13px; color: var(--muted); margin: 6px 0; }
+.final .res-table { font-size: 14px; }
+.final .res-table tr.me td { background: rgba(240, 200, 96, .12); }

@@ -293,11 +293,9 @@
     }
     p.append(h('table', 'res-table', `<tr><th></th><th>Пуля</th><th>Гора</th><th>Висты</th></tr>${rows}`));
     if (game.over) {
-      p.append(h('h3', '', 'Партия окончена'));
-      p.append(finalTable(game.final.balance));
-      const b = h('button', 'abtn primary', 'Новая партия');
-      b.onclick = () => ctx.onNewGame();
       const row = h('div', 'brow');
+      const b = h('button', 'abtn primary', 'Итоги партии');
+      b.onclick = showFinal;
       row.append(b);
       p.append(row);
     } else {
@@ -312,14 +310,46 @@
     return p;
   }
 
-  function finalTable(balance) {
+  // Экран окончания партии
+  function showFinal() {
+    if (!game || !game.over) return;
+    const bal = game.final.balance;
+    const sc = game.score;
+    const order = [0, 1, 2].sort((a, b) => bal[b] - bal[a]);
+    const place = order.indexOf(0) + 1;
+    const me = bal[0];
+    const box = h('div', 'final');
+    let title, cls;
+    if (me > 0) { title = place === 1 ? '🏆 Вы выиграли!' : 'Вы в плюсе!'; cls = 'win'; }
+    else if (me < 0) { title = 'Вы проиграли'; cls = 'lose'; }
+    else { title = 'Ничья'; cls = ''; }
+    box.append(h('div', 'final-title ' + cls, title));
+    box.append(h('div', 'final-score ' + (me >= 0 ? 'plus' : 'minus'), `${signed(me)} ${vistWord(me)}`));
+    box.append(h('p', 'final-sub', `${place}-е место из 3 · пуля до ${game.settings.poolLimit} · сдач: ${game.history.length}`));
     let rows = '';
-    const order = [0, 1, 2].sort((a, b) => balance[b] - balance[a]);
-    for (const i of order) {
-      const v = balance[i];
-      rows += `<tr><td>${nameOf(i)}</td><td class="${v >= 0 ? 'plus' : 'minus'}">${signed(v)}</td></tr>`;
-    }
-    return h('table', 'res-table', `<tr><th></th><th>Итог, вистов</th></tr>${rows}`);
+    order.forEach((i, k) => {
+      rows += `<tr${i === 0 ? ' class="me"' : ''}><td>${k + 1}. ${nameOf(i)}</td><td>${fmt(sc.pool[i])}</td>` +
+        `<td>${fmt(sc.mountain[i])}</td><td class="${bal[i] >= 0 ? 'plus' : 'minus'}"><b>${signed(bal[i])}</b></td></tr>`;
+    });
+    box.append(h('table', 'res-table', `<tr><th>Игрок</th><th>Пуля</th><th>Гора</th><th>Итог</th></tr>${rows}`));
+    box.append(h('p', 'final-sub', 'Итог — в вистах: горы выровнены и переведены в висты, висты сведены между игроками.'));
+    const row = h('div', 'brow');
+    const s = h('button', 'abtn ghost', 'Пуля');
+    s.onclick = showScore;
+    const b = h('button', 'abtn primary', 'Новая партия');
+    b.onclick = () => { closeModal(); ctx.onNewGame(); };
+    row.append(s, b);
+    box.append(row);
+    openModal(box);
+  }
+
+  function vistWord(x) {
+    const n = Math.abs(x);
+    if (n !== Math.floor(n)) return 'виста';
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return 'вист';
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'виста';
+    return 'вистов';
   }
 
   // ---------- Игрок ----------
@@ -531,5 +561,5 @@
     window.addEventListener('resize', layoutHand);
   }
 
-  Pref.UI = { init, render };
+  Pref.UI = { init, render, showFinal };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

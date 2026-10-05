@@ -13,6 +13,7 @@
 
   let game = null;
   let timer = null;
+  let finalShown = false;
 
   function readJSON(key) {
     try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
@@ -33,7 +34,12 @@
     if (!a) return;
     const sp = SPEED[game.settings.speed] || SPEED.normal;
     if (a.kind === 'collect') return schedule(() => { E.collectTrick(game); step(); }, sp.collect);
-    if (a.kind === 'done' || a.kind === 'over' || a.actor === 0) return;
+    if (a.kind === 'over') {
+      // сначала видна последняя сдача, затем — итоги партии
+      if (!finalShown) { finalShown = true; setTimeout(UI.showFinal, 1500); }
+      return;
+    }
+    if (a.kind === 'done' || a.actor === 0) return;
     const delay = a.kind === 'discard' ? sp.bot * 2.5 : sp.bot;
     schedule(() => { botAct(a); step(); }, delay);
   }
@@ -74,6 +80,7 @@
       timer = null;
       const settings = Object.assign({}, game ? game.settings : readJSON(SETTINGS_KEY), patch || {});
       writeJSON(SETTINGS_KEY, settings);
+      finalShown = false;
       game = E.newGame(settings);
       step();
     },
@@ -88,9 +95,9 @@
   function start() {
     UI.init(handlers);
     const saved = readJSON(SAVE_KEY);
-    if (saved && saved.v === 1 && saved.deal && !saved.over) {
+    if (saved && saved.v === 1 && saved.deal) {
       game = saved;
-      step();
+      step(); // законченная партия сразу покажет итоги
     } else {
       handlers.onNewGame();
     }

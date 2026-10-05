@@ -1,5 +1,5 @@
 // Офлайн-кэш: при изменении файлов увеличьте версию
-const CACHE = 'preferans-v1';
+const CACHE = 'preferans-v2';
 const FILES = [
   './',
   'index.html',
